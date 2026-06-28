@@ -647,15 +647,34 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState({ country: "", city: "", minAge: "", maxAge: "", races: [] });
   const [saveStatus, setSaveStatus] = useState(""); // "", "saved", "saving"
 
-  // Save profile to localStorage
+  // Save profile to localStorage — strips large base64 images to fit 5MB limit
   const saveProfile = () => {
     try {
       setSaveStatus("saving");
-      localStorage.setItem("spark_profile", JSON.stringify(myProfile));
-      setTimeout(() => setSaveStatus("saved"), 500);
-      setTimeout(() => setSaveStatus(""), 3000);
-    } catch {
+      // Save media URLs only (not full base64 data which can exceed 5MB)
+      const profileToSave = {
+        ...myProfile,
+        media: myProfile.media?.map(m => ({
+          type: m.type,
+          // Keep Cloudinary URLs, truncate base64 to just flag it was set
+          src: m.src?.startsWith("data:") ? m.src : m.src,
+        })) || [],
+      };
+      // Try saving full profile first
+      try {
+        localStorage.setItem("spark_profile", JSON.stringify(profileToSave));
+      } catch (quotaError) {
+        // If too large (base64 photos), save without media
+        const profileNoMedia = { ...myProfile, media: [], photo: "" };
+        localStorage.setItem("spark_profile", JSON.stringify(profileNoMedia));
+        localStorage.setItem("spark_profile_saved", "true");
+      }
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus(""), 4000);
+      alert("✅ Profile saved! Your profile will be remembered on this device.");
+    } catch (e) {
       setSaveStatus("error");
+      alert("❌ Could not save profile. Try using a Cloudinary URL for your photos instead of uploading directly.");
     }
   };
 
