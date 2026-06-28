@@ -82,6 +82,7 @@ function PhotoStep({ media, setMedia }) {
   const isConfigured = CLOUDINARY_CLOUD_NAME !== "YOUR_CLOUD_NAME";
 
   // Always sync all items to parent — use src for display
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const all = items.map(x => ({ type: x.type, src: x.src })).filter(x => x.src);
     setMedia(all);
@@ -543,7 +544,7 @@ function ChatScreen({ match, myContact, onBack }) {
 }
 
 // ─── PROFILE TAB ────────────────────────────────────────────
-function ProfileTab({ profile, liked, matches, onEdit }) {
+function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus }) {
   const [mediaPreview, setMediaPreview] = useState(null);
   return (
     <div style={{ padding: "10px 18px 20px", overflowY: "auto" }}>
@@ -557,7 +558,21 @@ function ProfileTab({ profile, liked, matches, onEdit }) {
         </div>
         <div style={{ color: "#fff", fontWeight: 900, fontSize: 20 }}>{profile.name}, {profile.age}</div>
         <div style={{ background: C.fire + "22", border: `1px solid ${C.fire}44`, borderRadius: 18, padding: "3px 14px", color: C.fire, fontWeight: 700, fontSize: 12 }}>🔥 Free Member</div>
-        <button onClick={onEdit} style={{ background: "#222", border: "1px solid #444", borderRadius: 20, padding: "5px 18px", color: "#fff", fontSize: 13, cursor: "pointer" }}>✏ Edit Profile</button>
+
+        {/* Save & Edit buttons */}
+        <div style={{ display: "flex", gap: 10, width: "100%" }}>
+          <button onClick={onEdit} style={{ flex: 1, background: "#222", border: "1px solid #444", borderRadius: 20, padding: "9px 0", color: "#fff", fontSize: 13, cursor: "pointer" }}>✏ Edit Profile</button>
+          <button onClick={onSave}
+            style={{ flex: 1, borderRadius: 20, padding: "9px 0", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+              background: saveStatus === "saved" ? C.match : saveStatus === "saving" ? "#444" : `linear-gradient(135deg,${C.fire},${C.fireGlow})`,
+              color: "#fff", transition: "background 0.3s" }}>
+            {saveStatus === "saved" ? "✓ Saved!" : saveStatus === "saving" ? "Saving..." : "💾 Save Profile"}
+          </button>
+        </div>
+
+        {saveStatus === "saved" && (
+          <div style={{ color: C.match, fontSize: 12, fontWeight: 600 }}>✓ Profile saved — stays after refresh!</div>
+        )}
       </div>
       <div style={{ background: C.card, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ color: C.muted, fontSize: 11, marginBottom: 8 }}>CONTACT</div>
@@ -615,7 +630,12 @@ function ProfileTab({ profile, liked, matches, onEdit }) {
 
 // ─── MAIN APP ────────────────────────────────────────────────
 export default function App() {
-  const [myProfile, setMyProfile] = useState(null);
+  // Load saved profile from localStorage on startup
+  const savedProfile = (() => {
+    try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
+  })();
+
+  const [myProfile, setMyProfile] = useState(savedProfile || null);
   const [tab, setTab] = useState("swipe");
   const [queue, setQueue] = useState(PROFILES);
   const [likedIds, setLikedIds] = useState([]);
@@ -625,6 +645,26 @@ export default function App() {
   const [filters, setFilters] = useState({ minAge: 18, maxAge: 60, interests: [], country: "", city: "", races: [] });
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState({ country: "", city: "", minAge: "", maxAge: "", races: [] });
+  const [saveStatus, setSaveStatus] = useState(""); // "", "saved", "saving"
+
+  // Save profile to localStorage
+  const saveProfile = () => {
+    try {
+      setSaveStatus("saving");
+      localStorage.setItem("spark_profile", JSON.stringify(myProfile));
+      setTimeout(() => setSaveStatus("saved"), 500);
+      setTimeout(() => setSaveStatus(""), 3000);
+    } catch {
+      setSaveStatus("error");
+    }
+  };
+
+  // Auto-save whenever profile changes
+  useEffect(() => {
+    if (myProfile) {
+      try { localStorage.setItem("spark_profile", JSON.stringify(myProfile)); } catch {}
+    }
+  }, [myProfile]);
 
   const allInterests = ["Hiking", "Music", "Travel", "Cooking", "Fitness", "Dogs", "Art", "Books", "Yoga", "Wellness", "Animals", "Jazz", "Entrepreneurship", "Food"];
 
@@ -882,7 +922,7 @@ export default function App() {
         )}
 
         {tab === "profile" && (
-          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setMyProfile(null)} />
+          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => { setMyProfile(null); localStorage.removeItem("spark_profile"); }} onSave={saveProfile} saveStatus={saveStatus} />
         )}
       </div>
 
