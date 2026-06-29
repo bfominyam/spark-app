@@ -636,6 +636,7 @@ export default function App() {
   const savedProfile = (() => {
     try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
   })();
+
   const [user, setUser] = useState(null);
   const [myProfile, setMyProfile] = useState(savedProfile || null);
   const [tab, setTab] = useState("swipe");
@@ -722,6 +723,7 @@ export default function App() {
   const handlePass = () => { if (current) setQueue(prev => prev.filter(p => p.id !== current.id)); };
 
   const ff = "'Helvetica Neue',Arial,sans-serif";
+  
   if (!user) return <AuthScreen onAuth={(u) => setUser(u)} />;
   if (!myProfile) return (
     <div style={{ width: "100%", maxWidth: 420, height: 680, margin: "0 auto", borderRadius: 28, overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
