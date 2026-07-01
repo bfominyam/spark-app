@@ -256,7 +256,7 @@ function SetupScreen({ onDone }) {
   const ff = "'Helvetica Neue',Arial,sans-serif";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: C.dark, padding: 24, overflowY: "auto", fontFamily: ff }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: C.dark, padding: 24, overflowY: "auto", fontFamily: ff }}>
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
       </div>
@@ -350,9 +350,9 @@ function SetupScreen({ onDone }) {
 
       {err && <div style={{ color: C.fire, fontSize: 13, marginBottom: 10 }}>⚠ {err}</div>}
 
-      <div style={{ display: "flex", gap: 10, marginTop: "auto", paddingTop: 14 }}>
-        {step > 0 && <button onClick={() => setStep(s => s - 1)} style={{ flex: 0.4, padding: "12px 0", borderRadius: 24, border: "1px solid #444", background: "transparent", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Back</button>}
-        <button onClick={next} style={{ flex: 1, padding: "14px 0", borderRadius: 24, ...grad, border: "none", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" }}>
+      <div style={{ display: "flex", gap: 10, paddingTop: 20, paddingBottom: 30, marginTop: "auto" }}>
+        {step > 0 && <button onClick={() => setStep(s => s - 1)} style={{ flex: 0.4, padding: "14px 0", borderRadius: 24, border: "1px solid #444", background: "transparent", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Back</button>}
+        <button onClick={next} style={{ flex: 1, padding: "16px 0", borderRadius: 24, ...grad, border: "none", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" }}>
           {step === 2 ? "Create Profile 🔥" : "Continue →"}
         </button>
       </div>
@@ -751,7 +751,7 @@ export default function App() {
   );
 
   if (!myProfile) return (
-    <div style={{ width: "100%", maxWidth: 420, height: 680, margin: "0 auto", borderRadius: 28, overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
+    <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", margin: "0 auto", overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
       <SetupScreen onDone={p => setMyProfile(p)} />
     </div>
   );
