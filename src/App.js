@@ -7,8 +7,8 @@ import AuthScreen from "./AuthScreen";
 // Sign up free at cloudinary.com → copy your Cloud Name below
 // Then go to Settings → Upload → Add upload preset (unsigned mode)
 // ─────────────────────────────────────────────────────────────
-const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";   // ← replace this
-const CLOUDINARY_UPLOAD_PRESET = "spark_uploads";  // ← match your preset name
+const CLOUDINARY_CLOUD_NAME = "canicuwj";
+const CLOUDINARY_UPLOAD_PRESET = "spark_uploads";
 
 const PROFILES = [
   { id: 1, name: "Aria", age: 26, bio: "Avid hiker, terrible cook, great dancer. Looking for someone to share adventures with 🏔️", interests: ["Hiking", "Music", "Travel"], photo: "https://randomuser.me/api/portraits/women/44.jpg", distance: "3 miles away", job: "Graphic Designer", location: { city: "Austin", country: "United States" }, race: "Hispanic / Latino", media: [] },
