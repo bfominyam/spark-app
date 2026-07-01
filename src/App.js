@@ -548,7 +548,7 @@ function ChatScreen({ match, myContact, onBack }) {
 }
 
 // ─── PROFILE TAB ────────────────────────────────────────────
-function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSignOut }) {
+function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSignOut, onGoToMatches }) {
   const [mediaPreview, setMediaPreview] = useState(null);
   return (
     <div style={{ padding: "10px 18px 20px", overflowY: "auto" }}>
@@ -619,12 +619,16 @@ function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSig
       <div style={{ background: C.card, borderRadius: 14, padding: 14 }}>
         <div style={{ color: C.muted, fontSize: 11, marginBottom: 10 }}>STATS</div>
         <div style={{ display: "flex", justifyContent: "space-around" }}>
-          {[{ val: liked, color: C.fire, label: "Liked" }, { val: matches, color: C.match, label: "Matched" }].map(s => (
-            <div key={s.label} style={{ textAlign: "center" }}>
-              <div style={{ color: s.color, fontWeight: 900, fontSize: 26 }}>{s.val}</div>
-              <div style={{ color: C.muted, fontSize: 12 }}>{s.label}</div>
-            </div>
-          ))}
+          <div onClick={onGoToMatches} style={{ textAlign: "center", cursor: "pointer", padding: "8px 24px", borderRadius: 12, background: "#0d0d0d" }}>
+            <div style={{ color: C.fire, fontWeight: 900, fontSize: 26 }}>{liked}</div>
+            <div style={{ color: C.muted, fontSize: 12 }}>Liked</div>
+            <div style={{ color: C.fire, fontSize: 10, marginTop: 2 }}>View →</div>
+          </div>
+          <div onClick={onGoToMatches} style={{ textAlign: "center", cursor: "pointer", padding: "8px 24px", borderRadius: 12, background: "#0d0d0d" }}>
+            <div style={{ color: C.match, fontWeight: 900, fontSize: 26 }}>{matches}</div>
+            <div style={{ color: C.muted, fontSize: 12 }}>Matched</div>
+            <div style={{ color: C.match, fontSize: 10, marginTop: 2 }}>View →</div>
+          </div>
         </div>
       </div>
       {mediaPreview && (
@@ -1040,7 +1044,7 @@ export default function App() {
         )}
 
         {tab === "profile" && (
-          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setIsEditing(true)} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} />
+          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setIsEditing(true)} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} onGoToMatches={() => setTab("matches")} />
         )}
       </div>
 
