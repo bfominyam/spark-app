@@ -224,16 +224,17 @@ function PhotoStep({ media, setMedia }) {
 }
 
 // ─── SETUP SCREEN ───────────────────────────────────────────
-function SetupScreen({ onDone }) {
+function SetupScreen({ onDone, existingProfile }) {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [contact, setContact] = useState({ type: "phone", value: "" });
-  const [location, setLocation] = useState({ country: "", city: "" });
-  const [bio, setBio] = useState("");
-  const [race, setRace] = useState("");
-  const [media, setMedia] = useState([]);
+  const [name, setName] = useState(existingProfile?.name || "");
+  const [age, setAge] = useState(existingProfile?.age?.toString() || "");
+  const [contact, setContact] = useState(existingProfile?.contact || { type: "phone", value: "" });
+  const [location, setLocation] = useState(existingProfile?.location || { country: "", city: "" });
+  const [bio, setBio] = useState(existingProfile?.bio || "");
+  const [race, setRace] = useState(existingProfile?.race || "");
+  const [media, setMedia] = useState(existingProfile?.media || []);
   const [err, setErr] = useState("");
+  const isEditing = !!existingProfile;
 
   const next = () => {
     setErr("");
@@ -259,6 +260,7 @@ function SetupScreen({ onDone }) {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: C.dark, padding: 24, overflowY: "auto", fontFamily: ff }}>
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
+        {isEditing && <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Editing your profile</div>}
       </div>
 
       {/* Progress */}
@@ -353,7 +355,7 @@ function SetupScreen({ onDone }) {
       <div style={{ display: "flex", gap: 10, paddingTop: 20, paddingBottom: 30, marginTop: "auto" }}>
         {step > 0 && <button onClick={() => setStep(s => s - 1)} style={{ flex: 0.4, padding: "14px 0", borderRadius: 24, border: "1px solid #444", background: "transparent", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Back</button>}
         <button onClick={next} style={{ flex: 1, padding: "16px 0", borderRadius: 24, ...grad, border: "none", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" }}>
-          {step === 2 ? "Create Profile 🔥" : "Continue →"}
+          {step === 2 ? (isEditing ? "Save Changes ✓" : "Create Profile 🔥") : "Continue →"}
         </button>
       </div>
     </div>
@@ -783,6 +785,8 @@ export default function App() {
 
   const ff = "'Helvetica Neue',Arial,sans-serif";
 
+  const [isEditing, setIsEditing] = useState(false);
+
   // Show nothing while checking auth
   if (!authChecked || profileLoading) return (
     <div style={{ width: "100%", maxWidth: 420, height: "100vh", margin: "0 auto", background: C.dark, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -798,24 +802,27 @@ export default function App() {
     <AuthScreen onAuth={(u) => setUser(u)} />
   );
 
-  if (!myProfile) return (
+  if (!myProfile || isEditing) return (
     <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", margin: "0 auto", overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
-      <SetupScreen onDone={async (p) => {
-        setMyProfile(p);
-        // Save to Supabase immediately
-        if (user) {
-          const mediaToSave = p.media?.map(m => ({ type: m.type, src: m.src?.startsWith("data:") ? "" : m.src })).filter(m => m.src) || [];
-          await supabase.from("profiles").upsert({
-            user_id: user.id,
-            name: p.name, age: p.age, bio: p.bio, race: p.race || "",
-            job: p.job || "", contact_type: p.contact?.type || "",
-            contact_value: p.contact?.value || "",
-            city: p.location?.city || "", country: p.location?.country || "",
-            photo: p.photo || "", media: JSON.stringify(mediaToSave),
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-        }
-      }} />
+      <SetupScreen
+        existingProfile={isEditing ? myProfile : null}
+        onDone={async (p) => {
+          setMyProfile(p);
+          setIsEditing(false);
+          if (user) {
+            const mediaToSave = p.media?.map(m => ({ type: m.type, src: m.src?.startsWith("data:") ? "" : m.src })).filter(m => m.src) || [];
+            await supabase.from("profiles").upsert({
+              user_id: user.id,
+              name: p.name, age: p.age, bio: p.bio, race: p.race || "",
+              job: p.job || "", contact_type: p.contact?.type || "",
+              contact_value: p.contact?.value || "",
+              city: p.location?.city || "", country: p.location?.country || "",
+              photo: p.photo || "", media: JSON.stringify(mediaToSave),
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+          }
+        }}
+      />
     </div>
   );
 
@@ -1033,7 +1040,7 @@ export default function App() {
         )}
 
         {tab === "profile" && (
-          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => { setMyProfile(null); localStorage.removeItem("spark_profile"); }} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} />
+          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setIsEditing(true)} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} />
         )}
       </div>
 
