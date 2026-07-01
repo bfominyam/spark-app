@@ -647,12 +647,9 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load saved profile from localStorage on startup
-  const savedProfile = (() => {
-    try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
-  })();
-
-  const [myProfile, setMyProfile] = useState(savedProfile || null);
+  // Load profile from Supabase when user logs in
+  const [myProfile, setMyProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [tab, setTab] = useState("swipe");
   const [queue, setQueue] = useState(PROFILES);
   const [likedIds, setLikedIds] = useState([]);
@@ -662,45 +659,85 @@ export default function App() {
   const [filters, setFilters] = useState({ minAge: 18, maxAge: 60, interests: [], country: "", city: "", races: [] });
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState({ country: "", city: "", minAge: "", maxAge: "", races: [] });
-  const [saveStatus, setSaveStatus] = useState(""); // "", "saved", "saving"
+  const [saveStatus, setSaveStatus] = useState("");
 
-  // Save profile to localStorage — strips large base64 images to fit 5MB limit
-  const saveProfile = () => {
+  // Load profile from Supabase whenever user changes
+  useEffect(() => {
+    if (!user) { setMyProfile(null); setProfileLoading(false); return; }
+    setProfileLoading(true);
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (data && !error) {
+          // Reconstruct profile object from database
+          setMyProfile({
+            name: data.name,
+            age: data.age,
+            bio: data.bio,
+            race: data.race,
+            job: data.job || "",
+            contact: { type: data.contact_type, value: data.contact_value },
+            location: { city: data.city, country: data.country },
+            photo: data.photo || "",
+            media: data.media ? JSON.parse(data.media) : [],
+          });
+        } else {
+          setMyProfile(null);
+        }
+        setProfileLoading(false);
+      });
+  }, [user]);
+
+  // Save profile to Supabase
+  const saveProfile = async () => {
+    if (!user || !myProfile) return;
+    setSaveStatus("saving");
     try {
-      setSaveStatus("saving");
-      // Save media URLs only (not full base64 data which can exceed 5MB)
-      const profileToSave = {
-        ...myProfile,
-        media: myProfile.media?.map(m => ({
-          type: m.type,
-          // Keep Cloudinary URLs, truncate base64 to just flag it was set
-          src: m.src?.startsWith("data:") ? m.src : m.src,
-        })) || [],
+      // Strip large base64 images — only save Cloudinary URLs
+      const mediaToSave = myProfile.media?.map(m => ({
+        type: m.type,
+        src: m.src?.startsWith("data:") ? "" : m.src,
+      })).filter(m => m.src) || [];
+
+      const profileData = {
+        user_id: user.id,
+        name: myProfile.name,
+        age: myProfile.age,
+        bio: myProfile.bio,
+        race: myProfile.race || "",
+        job: myProfile.job || "",
+        contact_type: myProfile.contact?.type || "",
+        contact_value: myProfile.contact?.value || "",
+        city: myProfile.location?.city || "",
+        country: myProfile.location?.country || "",
+        photo: myProfile.photo || "",
+        media: JSON.stringify(mediaToSave),
+        updated_at: new Date().toISOString(),
       };
-      // Try saving full profile first
-      try {
-        localStorage.setItem("spark_profile", JSON.stringify(profileToSave));
-      } catch (quotaError) {
-        // If too large (base64 photos), save without media
-        const profileNoMedia = { ...myProfile, media: [], photo: "" };
-        localStorage.setItem("spark_profile", JSON.stringify(profileNoMedia));
-        localStorage.setItem("spark_profile_saved", "true");
-      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(profileData, { onConflict: "user_id" });
+
+      if (error) throw error;
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(""), 4000);
-      alert("✅ Profile saved! Your profile will be remembered on this device.");
+      alert("✅ Profile saved to cloud! You can now log in from any device.");
     } catch (e) {
       setSaveStatus("error");
-      alert("❌ Could not save profile. Try using a Cloudinary URL for your photos instead of uploading directly.");
+      alert("❌ Could not save to cloud: " + e.message);
     }
   };
 
-  // Auto-save whenever profile changes
+  // Auto-save to Supabase when profile is first created
   useEffect(() => {
-    if (myProfile) {
-      try { localStorage.setItem("spark_profile", JSON.stringify(myProfile)); } catch {}
+    if (myProfile && user) {
+      saveProfile();
     }
-  }, [myProfile]);
+  }, []); // Only on mount
 
   const allInterests = ["Hiking", "Music", "Travel", "Cooking", "Fitness", "Dogs", "Art", "Books", "Yoga", "Wellness", "Animals", "Jazz", "Entrepreneurship", "Food"];
 
@@ -739,9 +776,12 @@ export default function App() {
   const ff = "'Helvetica Neue',Arial,sans-serif";
 
   // Show nothing while checking auth
-  if (!authChecked) return (
-    <div style={{ width: "100%", maxWidth: 420, height: 680, margin: "0 auto", borderRadius: 28, background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
-      <div style={{ fontSize: 48 }}>🔥</div>
+  if (!authChecked || profileLoading) return (
+    <div style={{ width: "100%", maxWidth: 420, height: "100vh", margin: "0 auto", background: C.dark, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <div style={{ fontSize: 52 }}>🔥</div>
+      <div style={{ color: C.fire, fontWeight: 800, fontSize: 20 }}>Spark</div>
+      <div style={{ width: 40, height: 40, border: `3px solid ${C.fire}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
@@ -752,7 +792,22 @@ export default function App() {
 
   if (!myProfile) return (
     <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", margin: "0 auto", overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
-      <SetupScreen onDone={p => setMyProfile(p)} />
+      <SetupScreen onDone={async (p) => {
+        setMyProfile(p);
+        // Save to Supabase immediately
+        if (user) {
+          const mediaToSave = p.media?.map(m => ({ type: m.type, src: m.src?.startsWith("data:") ? "" : m.src })).filter(m => m.src) || [];
+          await supabase.from("profiles").upsert({
+            user_id: user.id,
+            name: p.name, age: p.age, bio: p.bio, race: p.race || "",
+            job: p.job || "", contact_type: p.contact?.type || "",
+            contact_value: p.contact?.value || "",
+            city: p.location?.city || "", country: p.location?.country || "",
+            photo: p.photo || "", media: JSON.stringify(mediaToSave),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        }
+      }} />
     </div>
   );
 
