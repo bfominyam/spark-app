@@ -548,7 +548,7 @@ function ChatScreen({ match, myContact, onBack }) {
 }
 
 // ─── PROFILE TAB ────────────────────────────────────────────
-function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSignOut, onGoToMatches }) {
+function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSignOut, onGoToMatches, onGoToLiked }) {
   const [mediaPreview, setMediaPreview] = useState(null);
   return (
     <div style={{ padding: "10px 18px 20px", overflowY: "auto" }}>
@@ -619,7 +619,7 @@ function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSig
       <div style={{ background: C.card, borderRadius: 14, padding: 14 }}>
         <div style={{ color: C.muted, fontSize: 11, marginBottom: 10 }}>STATS</div>
         <div style={{ display: "flex", justifyContent: "space-around" }}>
-          <div onClick={onGoToMatches} style={{ textAlign: "center", cursor: "pointer", padding: "8px 24px", borderRadius: 12, background: "#0d0d0d" }}>
+          <div onClick={onGoToLiked} style={{ textAlign: "center", cursor: "pointer", padding: "8px 24px", borderRadius: 12, background: "#0d0d0d" }}>
             <div style={{ color: C.fire, fontWeight: 900, fontSize: 26 }}>{liked}</div>
             <div style={{ color: C.muted, fontSize: 12 }}>Liked</div>
             <div style={{ color: C.fire, fontSize: 10, marginTop: 2 }}>View →</div>
@@ -670,6 +670,7 @@ export default function App() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState({ country: "", city: "", minAge: "", maxAge: "", races: [] });
   const [saveStatus, setSaveStatus] = useState("");
+  const [matchesView, setMatchesView] = useState("matched"); // "matched" | "liked"
 
   // Load profile from Supabase whenever user changes
   useEffect(() => {
@@ -932,31 +933,73 @@ export default function App() {
 
         {tab === "matches" && (
           <div style={{ padding: "0 14px 14px" }}>
-            {matchList.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 40 }}>
-                <div style={{ fontSize: 48 }}>💔</div>
-                <div style={{ color: "#fff", fontWeight: 700, marginTop: 10 }}>No matches yet</div>
-                <div style={{ color: C.muted, fontSize: 13 }}>Keep swiping!</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
-                <div style={{ color: C.muted, fontSize: 12 }}>{matchList.length} match{matchList.length > 1 ? "es" : ""}</div>
-                {matchList.map(m => (
-                  <div key={m.id} onClick={() => setChat(m)} style={{ display: "flex", alignItems: "center", gap: 12, background: C.card, borderRadius: 14, padding: 12, cursor: "pointer", border: "1px solid #2a2a40" }}>
-                    <div style={{ position: "relative" }}>
-                      <Avatar src={m.media?.[0]?.src || m.photo} name={m.name} size={52} />
-                      <div style={{ position: "absolute", bottom: 2, right: 2, width: 11, height: 11, background: C.match, borderRadius: "50%", border: "2px solid #1a1a2e" }} />
+            {/* Tab switcher */}
+            <div style={{ display: "flex", gap: 8, paddingTop: 10, marginBottom: 14 }}>
+              {[{ id: "matched", label: `❤️ Matches (${matchList.length})` }, { id: "liked", label: `👍 Liked (${likedIds.length})` }].map(t => (
+                <button key={t.id} onClick={() => setMatchesView(t.id)}
+                  style={{ flex: 1, padding: "9px 0", borderRadius: 12, border: `2px solid ${matchesView === t.id ? C.fire : "#333"}`, background: matchesView === t.id ? C.fire + "22" : "transparent", color: matchesView === t.id ? "#fff" : C.muted, cursor: "pointer", fontWeight: matchesView === t.id ? 700 : 400, fontSize: 13 }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Matches view */}
+            {matchesView === "matched" && (
+              matchList.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40 }}>
+                  <div style={{ fontSize: 48 }}>💔</div>
+                  <div style={{ color: "#fff", fontWeight: 700, marginTop: 10 }}>No matches yet</div>
+                  <div style={{ color: C.muted, fontSize: 13 }}>Keep swiping!</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ color: C.muted, fontSize: 12 }}>{matchList.length} mutual match{matchList.length > 1 ? "es" : ""}</div>
+                  {matchList.map(m => (
+                    <div key={m.id} onClick={() => setChat(m)} style={{ display: "flex", alignItems: "center", gap: 12, background: C.card, borderRadius: 14, padding: 12, cursor: "pointer", border: "1px solid #2a2a40" }}>
+                      <div style={{ position: "relative" }}>
+                        <Avatar src={m.media?.[0]?.src || m.photo} name={m.name} size={52} />
+                        <div style={{ position: "absolute", bottom: 2, right: 2, width: 11, height: 11, background: C.match, borderRadius: "50%", border: "2px solid #1a1a2e" }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{m.name}, {m.age}</div>
+                        <div style={{ color: C.muted, fontSize: 12 }}>{m.job}</div>
+                        {m.location && <div style={{ color: C.muted, fontSize: 11 }}>📍 {m.location.city}, {m.location.country}</div>}
+                        <div style={{ color: C.fire, fontSize: 11, marginTop: 2 }}>Tap to chat & view contact →</div>
+                      </div>
+                      <div style={{ ...grad, borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15 }}>💬</div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: "#fff", fontWeight: 700 }}>{m.name}, {m.age}</div>
-                      <div style={{ color: C.muted, fontSize: 12 }}>{m.job}</div>
-                      {m.location && <div style={{ color: C.muted, fontSize: 11 }}>📍 {m.location.city}, {m.location.country}</div>}
-                      <div style={{ color: C.fire, fontSize: 11, marginTop: 2 }}>Tap to chat & view contact →</div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Liked view */}
+            {matchesView === "liked" && (
+              likedIds.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40 }}>
+                  <div style={{ fontSize: 48 }}>🤍</div>
+                  <div style={{ color: "#fff", fontWeight: 700, marginTop: 10 }}>You haven't liked anyone yet</div>
+                  <div style={{ color: C.muted, fontSize: 13 }}>Go to Discover and start swiping!</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ color: C.muted, fontSize: 12 }}>{likedIds.length} profile{likedIds.length > 1 ? "s" : ""} you liked</div>
+                  {PROFILES.filter(p => likedIds.includes(p.id)).map(p => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: C.card, borderRadius: 14, padding: 12, border: "1px solid #2a2a40" }}>
+                      <Avatar src={p.media?.[0]?.src || p.photo} name={p.name} size={52} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{p.name}, {p.age}</div>
+                        <div style={{ color: C.muted, fontSize: 12 }}>{p.job}</div>
+                        {p.location && <div style={{ color: C.muted, fontSize: 11 }}>📍 {p.location.city}, {p.location.country}</div>}
+                        <div style={{ color: matchList.find(m => m.id === p.id) ? C.match : C.muted, fontSize: 11, marginTop: 2 }}>
+                          {matchList.find(m => m.id === p.id) ? "✓ Mutual match!" : "Waiting for them to like you back..."}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 22 }}>{matchList.find(m => m.id === p.id) ? "❤️" : "🤍"}</div>
                     </div>
-                    <div style={{ ...grad, borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15 }}>💬</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}
@@ -1044,7 +1087,9 @@ export default function App() {
         )}
 
         {tab === "profile" && (
-          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setIsEditing(true)} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} onGoToMatches={() => setTab("matches")} />
+          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => setIsEditing(true)} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut}
+            onGoToMatches={() => { setTab("matches"); setMatchesView("matched"); }}
+            onGoToLiked={() => { setTab("matches"); setMatchesView("liked"); }} />
         )}
       </div>
 
