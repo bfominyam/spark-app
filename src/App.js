@@ -224,7 +224,7 @@ function PhotoStep({ media, setMedia }) {
 }
 
 // ─── SETUP SCREEN ───────────────────────────────────────────
-function SetupScreen({ onDone, existingProfile }) {
+function SetupScreen({ onDone, existingProfile, onCancel }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState(existingProfile?.name || "");
   const [age, setAge] = useState(existingProfile?.age?.toString() || "");
@@ -258,9 +258,16 @@ function SetupScreen({ onDone, existingProfile }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: C.dark, padding: 24, overflowY: "auto", fontFamily: ff }}>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
-        {isEditing && <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Editing your profile</div>}
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
+        {isEditing && (
+          <button onClick={onCancel}
+            style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", marginRight: 10, padding: 4 }}>←</button>
+        )}
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
+          {isEditing && <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>Editing your profile</div>}
+        </div>
+        {isEditing && <div style={{ width: 34 }} />}
       </div>
 
       {/* Progress */}
@@ -811,6 +818,7 @@ export default function App() {
     <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", margin: "0 auto", overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
       <SetupScreen
         existingProfile={isEditing ? myProfile : null}
+        onCancel={() => setIsEditing(false)}
         onDone={async (p) => {
           setMyProfile(p);
           setIsEditing(false);
@@ -848,7 +856,13 @@ export default function App() {
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 8px", background: C.dark }}>
-        <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {(tab === "matches" || tab === "search" || tab === "profile") && (
+            <button onClick={() => setTab("swipe")}
+              style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>←</button>
+          )}
+          <div style={{ fontSize: 20, fontWeight: 900, background: `linear-gradient(135deg,${C.fire},${C.fireGlow})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 Spark</div>
+        </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={{ background: C.match + "22", border: `1px solid ${C.match}44`, borderRadius: 18, padding: "3px 11px", color: C.match, fontSize: 11, fontWeight: 700 }}>✓ Free</div>
           {tab === "swipe" && <button onClick={() => setShowFilters(f => !f)} style={{ background: showFilters ? C.fire : "#222", border: "none", borderRadius: 18, padding: "5px 11px", color: "#fff", fontSize: 11, cursor: "pointer" }}>⚙</button>}
