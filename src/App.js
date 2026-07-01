@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import AuthScreen from "./AuthScreen";
 import { supabase } from "./supabase";
+import AuthScreen from "./AuthScreen";
 
 // ─────────────────────────────────────────────────────────────
 // CLOUDINARY CONFIG
@@ -632,17 +632,26 @@ function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus }) {
 
 // ─── MAIN APP ────────────────────────────────────────────────
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check Supabase session on startup
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthChecked(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Load saved profile from localStorage on startup
-const savedProfile = (() => {
-  try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
-})();
+  const savedProfile = (() => {
+    try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
+  })();
 
-
-const [user, setUser] = useState(null);
-
-
-
-  
   const [myProfile, setMyProfile] = useState(savedProfile || null);
   const [tab, setTab] = useState("swipe");
   const [queue, setQueue] = useState(PROFILES);
@@ -728,8 +737,19 @@ const [user, setUser] = useState(null);
   const handlePass = () => { if (current) setQueue(prev => prev.filter(p => p.id !== current.id)); };
 
   const ff = "'Helvetica Neue',Arial,sans-serif";
-  
-  if (!user) return <AuthScreen onAuth={(u) => setUser(u)} />;
+
+  // Show nothing while checking auth
+  if (!authChecked) return (
+    <div style={{ width: "100%", maxWidth: 420, height: 680, margin: "0 auto", borderRadius: 28, background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
+      <div style={{ fontSize: 48 }}>🔥</div>
+    </div>
+  );
+
+  // Show auth screen if not logged in
+  if (!user) return (
+    <AuthScreen onAuth={(u) => setUser(u)} />
+  );
+
   if (!myProfile) return (
     <div style={{ width: "100%", maxWidth: 420, height: 680, margin: "0 auto", borderRadius: 28, overflow: "hidden", fontFamily: ff, boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
       <SetupScreen onDone={p => setMyProfile(p)} />
