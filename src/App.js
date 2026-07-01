@@ -546,7 +546,7 @@ function ChatScreen({ match, myContact, onBack }) {
 }
 
 // ─── PROFILE TAB ────────────────────────────────────────────
-function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus }) {
+function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus, onSignOut }) {
   const [mediaPreview, setMediaPreview] = useState(null);
   return (
     <div style={{ padding: "10px 18px 20px", overflowY: "auto" }}>
@@ -571,6 +571,10 @@ function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus }) {
             {saveStatus === "saved" ? "✓ Saved!" : saveStatus === "saving" ? "Saving..." : "💾 Save Profile"}
           </button>
         </div>
+        <button onClick={onSignOut}
+          style={{ width: "100%", padding: "10px 0", borderRadius: 20, border: "1px solid #444", background: "transparent", color: C.muted, fontSize: 13, cursor: "pointer" }}>
+          🚪 Sign Out
+        </button>
 
         {saveStatus === "saved" && (
           <div style={{ color: C.match, fontSize: 12, fontWeight: 600 }}>✓ Profile saved — stays after refresh!</div>
@@ -739,7 +743,11 @@ export default function App() {
     }
   }, []); // Only on mount
 
-  const allInterests = ["Hiking", "Music", "Travel", "Cooking", "Fitness", "Dogs", "Art", "Books", "Yoga", "Wellness", "Animals", "Jazz", "Entrepreneurship", "Food"];
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setMyProfile(null);
+    setUser(null);
+  };
 
   const applyFilters = (p) => {
     if (p.age < filters.minAge || p.age > filters.maxAge) return false;
@@ -1025,7 +1033,7 @@ export default function App() {
         )}
 
         {tab === "profile" && (
-          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => { setMyProfile(null); localStorage.removeItem("spark_profile"); }} onSave={saveProfile} saveStatus={saveStatus} />
+          <ProfileTab profile={myProfile} liked={likedIds.length} matches={matchList.length} onEdit={() => { setMyProfile(null); localStorage.removeItem("spark_profile"); }} onSave={saveProfile} saveStatus={saveStatus} onSignOut={signOut} />
         )}
       </div>
 
