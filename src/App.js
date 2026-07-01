@@ -633,11 +633,16 @@ function ProfileTab({ profile, liked, matches, onEdit, onSave, saveStatus }) {
 // ─── MAIN APP ────────────────────────────────────────────────
 export default function App() {
   // Load saved profile from localStorage on startup
-  const savedProfile = (() => {
-    try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
-  })();
+const savedProfile = (() => {
+  try { return JSON.parse(localStorage.getItem("spark_profile")); } catch { return null; }
+})();
 
-  const [user, setUser] = useState(null);
+
+const [user, setUser] = useState(null);
+
+
+
+  
   const [myProfile, setMyProfile] = useState(savedProfile || null);
   const [tab, setTab] = useState("swipe");
   const [queue, setQueue] = useState(PROFILES);
