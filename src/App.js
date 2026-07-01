@@ -939,7 +939,10 @@ export default function App() {
                 <div style={{ fontSize: 48 }}>🌟</div>
                 <div style={{ color: "#fff", fontWeight: 800, fontSize: 20, marginTop: 10 }}>You've seen everyone!</div>
                 <div style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>Check matches or adjust filters</div>
-                <button onClick={() => { setQueue(PROFILES); setFilters({ maxAge: 50, interests: [] }); }} style={{ ...grad, border: "none", borderRadius: 22, padding: "10px 22px", color: "#fff", fontWeight: 700, cursor: "pointer", marginTop: 18 }}>Start Over</button>
+                <button onClick={() => {
+                  setQueue(PROFILES);
+                  setFilters({ minAge: 18, maxAge: 60, interests: [], country: "", city: "", races: [] });
+                }} style={{ ...grad, border: "none", borderRadius: 22, padding: "10px 22px", color: "#fff", fontWeight: 700, cursor: "pointer", marginTop: 18 }}>Start Over</button>
               </div>
             )}
           </div>
